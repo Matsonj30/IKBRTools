@@ -3,11 +3,15 @@ from ibapi.common import BarData
 from ibapi.common import TickerId
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
+from ibapi.contract import Option
+from ibapi.ticktype import TickTypeEnum
 import threading
 import time
 import pandas as pd
 from techAnalysis import TechnicalAnalysis
 from orderManager import OrderManager
+import matplotlib as mpl
+
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -30,6 +34,7 @@ class IBConnection(EWrapper, EClient):
         thread.start()
         time.sleep(1)
     
+    #not really necessary to have if we arent placing order
     def nextValidId(self, orderID: TickerId):
         super().nextValidId(orderID)
         self.next_order_id = orderID
@@ -93,7 +98,7 @@ class IBConnection(EWrapper, EClient):
 
 
 
-    # This is for when you have a market subscription 
+    # This is for when you have a market subscription  CALLED by keepUpToDate=True 
     
     # def historicalDataUpdate(self, reqId, bar):
     #     self.data[reqId].append({
@@ -111,21 +116,15 @@ class IBConnection(EWrapper, EClient):
     #         print("Not enough candles in the dataset to compare")
         
 
-
-def main():
-    IBConnect = IBConnection()
-    IBConnect.connect("127.0.0.1", 7497, 0)
-    #Use this line if you have not paid for a real time subscription
-    IBConnect.reqMarketDataType(3)
-
+def getScriptionData(IBConnect):
     #If you have market data, use this as opposed to the while loop below
-    # IBConnect.requestData("SPY", "1 D", "1 Min")
-    # while not(IBConnect.data_ready):
-    #     time.sleep(1)
-    # df  = pd.DataFrame(IBConnect.data)
-    # print(df)
+    IBConnect.requestData("SPY", "1 D", "1 Min")
+    while not(IBConnect.data_ready):
+        time.sleep(1)
+    df  = pd.DataFrame(IBConnect.data)
+    print(df)
 
-    #Use this without a market subscription
+def getDelayedData(IBConnect):
     uniqueReqId = 1
     while True:
         IBConnect.requestData("SPY", "1 D", "1 Min", uniqueReqId)
@@ -139,6 +138,16 @@ def main():
         IBConnect.data_ready = False
         uniqueReqId += 1
         time.sleep(60)
+
+def main():
+    IBConnect = IBConnection()
+    IBConnect.connect("127.0.0.1", 7497, 0)
+    #Use this line if you have not paid for a real time subscription
+    IBConnect.reqMarketDataType(3)
+   
+
+
+
 
 
 if __name__ == "__main__":
